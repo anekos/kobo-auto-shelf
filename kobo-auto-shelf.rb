@@ -127,6 +127,7 @@ class Project
              when :sd
                '/mnt/sd'
              else
+               '/mnt/onboard'
                next
              end
       id = 'file://' + (P(base) + content.id).to_s
