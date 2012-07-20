@@ -30,15 +30,19 @@ Kobo にファイルを転送し、ついでに本棚を自動生成します。
 <本棚名>/ファイル のように一つだけディレクトリを作ってそこへ入れます。
 
 
-    ├── vimpr
-    │   ├── [anekos] Happy Hacking Vimperator.epub
-    │   └── [anekos616] 獄門 Vimperator.epub
-    ├── vim
-    │   ├── [しょうご] 小学生ではわからないかもしれない Vim.epub
-    │   └── [まんぼう] 水銀.epub
-    └── xmonad
-        ├── [えっきすもな堂] えっきすモナ道.epub
-        └── [anekos] おれおれ conf.epub
+    /media/data/device/kobo/sd
+      ├── vimpr
+      │   ├── [anekos] Happy Hacking Vimperator.epub
+      │   └── [anekos616] 獄門 Vimperator.epub
+      ├── vim
+      │   ├── [しょうご] 小学生ではわからないかもしれない Vim.epub
+      │   └── [まんぼう] 水銀.epub
+      └── xmonad
+          ├── [えっきすもな堂] えっきすモナ道.epub
+          └── [anekos] おれおれ conf.epub
+
+この場合、 vimpr vim xmonad の三つの本棚ができて、
+それぞれに本が入ります。
 
 ## 備考
 
