@@ -74,15 +74,25 @@ class Project
 
     (src + shelf).entries.each do
       |book|
-      next unless book.file?
+      next unless (src + shelf + book).file?
       next unless %w[epub pdf].include?(book.extname.downcase.sub(/\A\./, ''))
       put_now(book)
       src_file = src + shelf + book
       dest_file = PathUtil.escape_path(shelf + book)
       FileUtils.mkdir_p((dest + dest_file).parent)
-      FileUtils.cp(src_file, dest + dest_file)
       shelfContents << ShelfContent.new(type, dest_file)
+      if copy_file(src_file, dest + dest_file)
+        put_result('copied.')
+      else
+        put_result('skipped.')
+      end
     end
+  end
+
+  def copy_file (src, dest)
+    return false if dest.exist? and src.size == dest.size and src.mtime == dest.mtime
+    FileUtils.cp(src, dest)
+    return true
   end
 
   def make_shelf_all
