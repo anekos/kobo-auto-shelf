@@ -19,7 +19,8 @@ module PathUtil
       if it.bytes.all? {|c| (0x20 .. 0x7e) === c }
         it
       else
-        Base64.encode64(it.encode('CP932').to_s).gsub(/\n/, '').tr('/', '-')
+        opts = {:undef => :replace, :invalid => :replace, :replace => '='}
+        Base64.encode64(it.encode('CP932', opts).to_s).gsub(/\n/, '').tr('/', '-')
       end
     end.join('.')
   end
