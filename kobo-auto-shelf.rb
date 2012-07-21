@@ -90,7 +90,7 @@ class Project
   end
 
   def copy_file (src, dest)
-    return false if dest.exist? and src.size == dest.size and src.mtime == dest.mtime
+    return false if dest.exist? and src.size == dest.size # and src.mtime == dest.mtime
     FileUtils.cp(src, dest)
     return true
   end
