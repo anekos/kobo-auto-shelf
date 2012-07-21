@@ -78,7 +78,7 @@ class Project
       next unless %w[epub pdf].include?(book.extname.downcase.sub(/\A\./, ''))
       put_now(book)
       src_file = src + shelf + book
-      dest_file = PathUtil.escape_path(shelf + book)
+      dest_file = PathUtil.escape_path(shelf + book).sub_ext('.kepub.epub')
       FileUtils.mkdir_p((dest + dest_file).parent)
       shelfContents << ShelfContent.new(type, dest_file)
       if copy_file(src_file, dest + dest_file)
