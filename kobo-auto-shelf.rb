@@ -128,7 +128,6 @@ class Project
                '/mnt/sd'
              else
                '/mnt/onboard'
-               next
              end
       id = 'file://' + (P(base) + content.id).to_s
       if db.execute('select * from ShelfContent where ContentId = ?', id).empty?
@@ -160,18 +159,39 @@ def P (path)
   end
 end
 
+class OptionParser
+  def self.parse (args)
+    require 'ostruct'
+    require 'optparse'
 
-if ARGV.size == 4
-  argv = ARGV.map {|it| P(it) }
-  proj = Project.new
-  proj.body_path = argv[0]
-  proj.sd_path = argv[1]
-  proj.body_source_path = argv[2]
-  proj.sd_source_path = argv[3]
-  proj.run
-else
-  STDERR.puts <<"EOM"
-  Usage: #{File.basename($0)} <BODY_PATH> <SD_PATH> <BODY_SOURCE_PATH> <SD_SOURCE_PATH>
-EOM
-  exit 1
+    op = OpenStruct.new
+
+    parser = OptionParser.new do
+      |parser|
+      parser.banner = "Usage: #{File.basename($0)} [options]"
+
+      parser.on('--body <BODY_DRIVE_PATH>') { |it| op.body = P(it) }
+      parser.on('--sd <SD_DRIVE_PATH>') { |it| op.sd = P(it) }
+      parser.on('--body-source <BODY_SYNC_source>') { |it| op.body_source = P(it) }
+      parser.on('--sd-source <SD_SYNC_source>') { |it| op.sd_source = P(it) }
+    end
+
+    parser.parse!(args)
+
+    raise unless op.body and (op.body_source or (op.sd and op.sd_source))
+
+    op
+  rescue => e
+    puts e
+    puts parser.help
+    exit
+  end
 end
+
+options = OptionParser.parse(ARGV)
+proj = Project.new
+proj.body_path = options.body
+proj.sd_path = options.sd
+proj.body_source_path = options.body_source
+proj.sd_source_path = options.sd_source
+proj.run
