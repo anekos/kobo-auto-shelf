@@ -4,7 +4,9 @@
 require 'sqlite3'
 require 'uri'
 require 'base64'
+require 'term/ansicolor'
 
+include Term::ANSIColor
 
 module PathUtil
   def self.escape_path (path)
@@ -71,6 +73,7 @@ class Project
 
   def copy_files (type, src, dest, shelf)
     shelfContents = @shelf[shelf.to_s] = []
+    results = Struct.new(:ok, :fail).new([], [])
 
     (src + shelf).entries.each do
       |book|
@@ -82,9 +85,9 @@ class Project
       FileUtils.mkdir_p((dest + dest_file).parent)
       shelfContents << ShelfContent.new(type, dest_file)
       if copy_file(src_file, dest + dest_file)
-        put_result('copied.')
+        put_result('copied.'.bold.on_blue)
       else
-        put_result('skipped.')
+        put_result('skipped.'.on_red)
       end
     end
   end

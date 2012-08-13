@@ -54,3 +54,4 @@ Kobo にファイルを転送し、ついでに本棚を自動生成します。
 
 Ruby1.9
 sqlite3-ruby
+term-ansicolor
