@@ -29,6 +29,15 @@ module PathUtil
 end
 
 class ShelfContent < Struct.new(:type, :id)
+  def content_id
+    base = case self.type
+           when :sd
+             '/mnt/sd'
+           else
+             '/mnt/onboard'
+           end
+    return 'file://' + (P(base) + self.id).to_s
+  end
 end
 
 class Project
@@ -41,11 +50,20 @@ class Project
   end
 
   def run
-    reset
-    check!
-    copy(:body, @body_source_path, @body_path) if @body_source_path and @body_path
-    copy(:sd, @sd_source_path, @sd_path) if @sd_source_path and @sd_path
-    make_shelf_all
+    dbfile = @body_path.join('.kobo', 'KoboReader.sqlite')
+    SQLite3::Database.open(dbfile.to_s) do
+      |db|
+      db.results_as_hash = true
+      @db = db
+
+      reset
+      check!
+      copy(:body, @body_source_path, @body_path) if @body_source_path and @body_path
+      copy(:sd, @sd_source_path, @sd_path) if @sd_source_path and @sd_path
+      make_shelf_all
+
+      @db = nil
+    end
   end
 
   private
@@ -72,6 +90,7 @@ class Project
   end
 
   def copy_files (type, src, dest, shelf)
+
     shelfContents = @shelf[shelf.to_s] = []
     results = Struct.new(:ok, :fail).new([], [])
 
@@ -83,8 +102,10 @@ class Project
       src_file = src + shelf + book
       dest_file = PathUtil.escape_path(shelf + book).sub_ext('.kepub.epub')
       FileUtils.mkdir_p((dest + dest_file).parent)
-      shelfContents << ShelfContent.new(type, dest_file)
+      content = ShelfContent.new(type, dest_file)
+      shelfContents << content
       if copy_file(src_file, dest + dest_file)
+        update_content(content)
         put_result('copied.'.bold.on_blue)
       else
         put_result('skipped.'.on_red)
@@ -98,25 +119,28 @@ class Project
     return true
   end
 
+  def update_content (content)
+    # select * from content where contentid = "file:///mnt/onboard/foo/HOGE==.kepub.epub"
+    # select * from content where bookid like "file:///mnt/onboard/foo/HOGE==.kepub.epub"
+    # delete from content where contentid = "file:///mnt/onboard/foo/HOGE==.kepub.epub"
+    # delete from content where bookid like "file:///mnt/onboard/foo/HOGE==.kepub.epub"
+    cid = content.content_id
+    @db.execute('delete from content where contentid = ?', cid)
+    @db.execute('delete from content where bookid = ?', cid)
+  end
+
   def make_shelf_all
-    dbfile = @body_path.join('.kobo', 'KoboReader.sqlite')
-
-    SQLite3::Database.open(dbfile.to_s) do
-      |db|
-      db.results_as_hash = true
-
-      @shelf.each do
-        |name, contents|
-        put_phase("Make Shelf: #{name}")
-        make_shelf(db, name, contents)
-      end
+    @shelf.each do
+      |name, contents|
+      put_phase("Make Shelf: #{name}")
+      make_shelf(name, contents)
     end
   end
 
-  def make_shelf (db, name, contents)
-    if db.execute('select * from Shelf where Name = ?', name).empty?
+  def make_shelf (name, contents)
+    if @db.execute('select * from Shelf where Name = ?', name).empty?
       date = Time.now.getgm.strftime('%Y-%m-%dT%H:%M:%SZ')
-      db.execute(
+      @db.execute(
         'insert into Shelf' +
         '(CreationDate, InternalName, Name, _IsDeleted, _IsVisible, _IsSynced, LastModified)' +
         'values (?, ?, ?, "false", "true", "false", ?)',
@@ -126,15 +150,9 @@ class Project
 
     contents.each do
       |content|
-      base = case content.type
-             when :sd
-               '/mnt/sd'
-             else
-               '/mnt/onboard'
-             end
-      id = 'file://' + (P(base) + content.id).to_s
-      if db.execute('select * from ShelfContent where ContentId = ?', id).empty?
-        db.execute(<<-EOM, name, id)
+      id = content.content_id
+      if @db.execute('select * from ShelfContent where ContentId = ?', id).empty?
+        @db.execute(<<-EOM, name, id)
           insert into ShelfContent (ShelfName, ContentId) values (?, ?)
         EOM
       end
